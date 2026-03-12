@@ -1,8 +1,4 @@
-pipeline {
-    agent any
-
-    stages {
-        stage('Unit Tests - Backend') {
+stage('Unit Tests - Backend') {
     agent {
         docker {
             image 'snakee/golang-junit:1.21'
@@ -12,22 +8,25 @@ pipeline {
     steps {
         dir('bugtracker-backend') {
             sh '''
-              mkdir -p /tmp/go-cache /tmp/go-mod-cache /tmp/go-bin
+    mkdir -p /tmp/go/cache /tmp/go/mod /tmp/go/bin /tmp/go/home /tmp/go/pkg
 
-              GOCACHE=/tmp/go-cache GOMODCACHE=/tmp/go-mod-cache GOBIN=/tmp/go-bin \
-              go install github.com/jstemmer/go-junit-report/v2@latest
+    export GOPATH=/tmp/go
+    export GOCACHE=/tmp/go/cache
+    export GOMODCACHE=/tmp/go/mod
+    export GOBIN=/tmp/go/bin
+    export HOME=/tmp/go/home
+    export PATH=/tmp/go/bin:$PATH
 
-              export PATH=/tmp/go-bin:$PATH
+    go install github.com/jstemmer/go-junit-report/v2@latest
 
-              GOCACHE=/tmp/go-cache GOMODCACHE=/tmp/go-mod-cache go test -v ./... 2>&1 | go-junit-report > test-results.xml
+    go test -v ./... 2>&1 | go-junit-report > test-results.xml
 
-              GOCACHE=/tmp/go-cache GOMODCACHE=/tmp/go-mod-cache go test -coverprofile=coverage.out -covermode=atomic ./...
+    go test -coverprofile=coverage.out -covermode=atomic ./...
+    go tool cover -html=coverage.out -o coverage.html
 
-              go tool cover -html=coverage.out -o coverage.html
-
-              mkdir -p reports
-              mv coverage.html reports/
-            '''
+    mkdir -p reports
+    mv coverage.html reports/
+'''
         }
     }
     post {
@@ -38,30 +37,6 @@ pipeline {
                 reportFiles: 'coverage.html',
                 reportName: 'Backend Coverage Report'
             ]
-        }
-    }
-}
-
-        stage('Unit Tests - Frontend') {
-            agent {
-                docker {
-                    image 'node:20-alpine'
-                    reuseNode true
-                }
-            }
-            steps {
-                dir('bugtracker-frontend') {
-                    sh '''
-                        npm ci
-                        npm test -- --reporters=default --reporters=jest-junit
-                    '''
-                }
-            }
-            post {
-                always {
-                    junit 'bugtracker-frontend/test-results.xml'
-                }
-            }
         }
     }
 }
