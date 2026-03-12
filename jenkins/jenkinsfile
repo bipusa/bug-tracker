@@ -16,14 +16,14 @@ pipeline {
                 }
                 
             }
-            post{
+            post {
                 always{
-                    junit 'bugtracker-backend/test-result.xml'
+                    junit 'bugtracker-backend/test-results.xml'
                 }
             }
         }
         stage ('Unit Tests - Frontend'){
-            agent{
+            agent {
                 docker{
                     image 'node:20-alpine'
                     reuseNode true
