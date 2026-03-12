@@ -11,14 +11,29 @@ pipeline {
             }
             steps {
                 dir ('bugtracker-backend'){
-                    sh ''' mkdir -p /tmp/go-cache /tmp/go-mod-cache
-                          GOCACHE=/tmp/go-cache GOMODCACHE=/tmp/go-mod-cache go test -v ./...  2>&1 | go-junit-report > test-results.xml'''
+                    sh ''' 
+                        mkdir -p /tmp/go-cache /tmp/go-mod-cache
+                        GOCACHE=/tmp/go-cache GOMODCACHE=/tmp/go-mod-cache go test -v ./...  2>&1 | go-junit-report > test-results.xml
+                         
+                        # Generate coverage report
+                          go test -coverprofile=coverage.out -covermode=atomic ./...
+                          go tool cover -html=coverage.out -o coverage.html  
+
+                          mkdir -p reports
+                          mv coverage.html reports/                      
+                        '''
                 }
                 
             }
             post {
                 always{
                     junit 'bugtracker-backend/test-results.xml'
+                    publishHTML target: [
+                        reportDir: 'bugtracker-backend/reports',
+                        reportFiles: 'coverage.html',
+                        reportName: 'Backend Coverage Report'
+                    ]
+                    
                 }
             }
         }
