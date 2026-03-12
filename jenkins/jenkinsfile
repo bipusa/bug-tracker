@@ -12,9 +12,14 @@ pipeline {
             steps {
                 dir ('bugtracker-backend'){
                     sh ''' mkdir -p /tmp/go-cache /tmp/go-mod-cache
-                          GOCACHE=/tmp/go-cache GOMODCACHE=/tmp/go-mod-cache go test -v ./...'''
+                          GOCACHE=/tmp/go-cache GOMODCACHE=/tmp/go-mod-cache go test -v ./...  2>&1 | go-junit-report > test-results.xml'''
                 }
                 
+            }
+            post{
+                always{
+                    junit 'bugtracker-backend/test-result.xml'
+                }
             }
         }
         stage ('Unit Tests - Frontend'){
