@@ -4,7 +4,7 @@ on:         # this is when to trigger the workflow, one is if code is pushed to 
   push:
     branches:
       -main
-  workflow dispatch:   #this is via github UI
+  workflow_dispatch:   #this is via github UI
 
 jobs:      #what are the jobs created to run in CI
   unit-tests-backend:
