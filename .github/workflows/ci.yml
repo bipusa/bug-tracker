@@ -1,0 +1,27 @@
+name: CI    # this is the name of workflow
+
+on:         # this is when to trigger the workflow, one is if code is pushed to the main branch
+  push:
+    branches:
+      -main
+  workflow dispatch:   #this is via github UI
+
+job:      #what are the jobs created to run in CI
+  unit-tests-backend:
+    runs-on: ubuntu-latest
+    steps:  
+      - uses: actions/checkout@v4   #this was not necessary in jenkins but need to chatgpt what this is
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+            go-version: "1.21"
+            cache-dependency-path:
+
+      - name: Execute Backend Unit tests
+        working-directory: ./bugtracker-backend
+        run: |
+            go test -v ./...
+
+
+
