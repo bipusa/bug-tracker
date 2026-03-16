@@ -19,11 +19,22 @@ jobs:                                                            # A workflow co
           go-version: "1.21"                                     # Tells GitHub Actions to use Go version 1.21.
           cache-dependency-path: bugtracker-backend/go.sum        # Uses go.sum to cache dependencies and speed up future runs.
 
+      - name: Install go-junit-report
+        run: go install github.com/jstemmer/go-junit-report/v2@latest
+
       - name: Execute Backend Unit Tests                         # Another readable step name shown in the workflow logs.
         working-directory: ./bugtracker-backend                  # Move into the backend folder before running the command.
         run: |                      # Start a shell command block. You can put one or multiple commands here.
-          go test -v ./...          # Run all Go tests in this folder and subfolders with verbose output.
-  
+          go test -v ./... 2>&1 | go-junit-report > test-results.xml         # Run all Go tests in this folder and subfolders with verbose output.
+      
+      - name: Publish backend test results
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: Backend Unit Tests report
+          path: bugtracker-backend/test-results.xml
+          reporter: jest-junit 
+
   
   unit-tests-frontend:
     needs: unit-tests-backend
