@@ -3,7 +3,7 @@ name: CI    # this is the name of workflow
 on:         # this is when to trigger the workflow, one is if code is pushed to the main branch
   push:
     branches:
-      -main
+      - main
     workflow_dispatch:   #this is via github UI
 
 jobs:      #what are the jobs created to run in CI
