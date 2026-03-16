@@ -4,6 +4,9 @@ on:                                     # Defines when this workflow should star
   push:                                             # Run automatically whenever code is pushed.
     branches:                                                   # Limit the push trigger to specific branches.
       - main                                      # Only run automatically when the push goes to the main branch.
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:                                        # Also allow manual triggering from the GitHub Actions UI.
 
 jobs:                                                            # A workflow contains one or more jobs.
@@ -54,7 +57,7 @@ jobs:                                                            # A workflow co
 
   
   unit-tests-frontend:
-    needs: unit-tests-backend
+    ##needs: unit-tests-backend
     runs-on: ubuntu-latest
     steps:
         - uses: actions/checkout@v4
