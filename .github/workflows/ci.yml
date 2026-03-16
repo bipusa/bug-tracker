@@ -34,7 +34,7 @@ jobs:                                                            # A workflow co
         - name: Setup Node.js 
           uses: actions/setup-node@v4
           with:
-            node-version: "20"
+            node-version: "24"
             cache: "npm"
             cache-dependency-path: bugtracker-frontend/package-lock.json
 
@@ -44,3 +44,11 @@ jobs:                                                            # A workflow co
           run: |
             npm ci 
             npm test
+
+        - name: Publish Frontend Test Results
+          uses: dorny/test-reporter@v1
+          if: always()
+          with:
+            name: Frontend Unit Tests reporter
+            path: bugtracker-frontend/test-results.xml
+            reporter: jest-junit
