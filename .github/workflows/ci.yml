@@ -23,3 +23,23 @@ jobs:                                                            # A workflow co
         working-directory: ./bugtracker-backend                  # Move into the backend folder before running the command.
         run: |                      # Start a shell command block. You can put one or multiple commands here.
           go test -v ./...          # Run all Go tests in this folder and subfolders with verbose output.
+  jobs:
+    unit-tests-frontend:
+      needs: unit-tests-backend
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v4
+
+        - name: Setup Node.js 
+          uses: actions/setup-node@v4
+          with:
+            node-version: "20"
+            cache: "npm"
+            cache-dependency-path: bugtracker-frontend/package-lock.json
+
+
+        - name: Execute Frontend Unit Tests
+          working-directory: ./bugtracker-frontend
+          run: |
+            npm CI
+            npm test
