@@ -1,79 +1,98 @@
-name: CI                          # Gives this workflow a name. You will see "CI" in the GitHub Actions tab.
+name: CI # Gives this workflow a name. You will see "CI" in the GitHub Actions tab.
 
-on:                                     # Defines when this workflow should start.
-  push:                                             # Run automatically whenever code is pushed.
-    branches:                                                   # Limit the push trigger to specific branches.
-      - main                                      # Only run automatically when the push goes to the main branch.
-  workflow_dispatch:                                        # Also allow manual triggering from the GitHub Actions UI.
+on: # Defines when this workflow should start.
+  push: # Run automatically whenever code is pushed.
+    branches: # Limit the push trigger to specific branches.
+      - main # Only run automatically when the push goes to the main branch.
+  pull_request: # Also run when a pull request targets main.
+    branches:
+      - main
+  workflow_dispatch: # Also allow manual triggering from the GitHub Actions UI.
 
-jobs:                                                            # A workflow contains one or more jobs.
-  unit-tests-backend:                                           # This is the job ID. It can be any readable identifier.
-    runs-on: ubuntu-latest                                     # Use GitHub's latest Ubuntu runner machine.
+jobs: # A workflow contains one or more jobs.
 
-    steps:                                                      # A job runs as a sequence of steps.
-      - uses: actions/checkout@v4                   # Downloads your repository code into the runner so the workflow can access your files.
+  unit-tests-backend: # Backend unit test job.
+    runs-on: ubuntu-latest # Use GitHub's latest Ubuntu runner machine.
+    outputs:
+      coverage: ${{ steps.test-backend.outputs.report }}
 
-      - name: Set up Go                                         # A readable label for this step in the Actions log.
-        uses: actions/setup-go@v4                                 # Installs and configures Go on the runner.
-        with:                                                    # Inputs for the setup-go action.
-          go-version: "1.21"                                     # Tells GitHub Actions to use Go version 1.21.
-          cache-dependency-path: bugtracker-backend/go.sum        # Uses go.sum to cache dependencies and speed up future runs.
+    steps:
+      - uses: actions/checkout@v4 # Downloads your repository code into the runner so the workflow can access your files.
 
-      - name: Install go-junit-report
+      - name: Set up Go # Installs and configures Go on the runner.
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.21" # Tells GitHub Actions to use Go version 1.21.
+          cache-dependency-path: bugtracker-backend/go.sum # Uses go.sum to cache dependencies and speed up future runs.
+
+      - name: Install go-junit-report # Installs a tool that converts Go test output into JUnit XML.
         run: go install github.com/jstemmer/go-junit-report/v2@latest
 
-      - name: Execute Backend Unit Tests                         # Another readable step name shown in the workflow logs.
-        working-directory: ./bugtracker-backend                  # Move into the backend folder before running the command.
-        run: |                      # Start a shell command block. You can put one or multiple commands here.
-          
+      - name: Execute Backend Unit Tests # Run backend unit tests and create coverage + junit report.
+        id: test-backend
+        working-directory: ./bugtracker-backend
+        shell: bash
+        run: |
           go test -json -coverprofile=coverage.out -covermode=atomic ./...
           go tool cover -func=coverage.out > coverage.txt
 
           echo "## Go Test Coverage Report" >> $GITHUB_STEP_SUMMARY
-          echo "'''" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
           cat coverage.txt >> $GITHUB_STEP_SUMMARY
-          echo "'''" >> $GITHUB_STEP_SUMMARY
-          
-          go test -v ./... 2>&1 | go-junit-report > test-results.xml         # Run all Go tests in this folder and subfolders with verbose output.
-      
-      - name: Publish backend test results
-        uses: dorny/test-reporter@v1
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+          echo "report<<EOF" >> $GITHUB_OUTPUT
+          cat coverage.txt >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+          go test -v ./... 2>&1 | $(go env GOPATH)/bin/go-junit-report > test-results.xml
+
+      - name: Publish backend test results # Publish junit XML test results to GitHub Actions UI.
         if: always()
+        uses: dorny/test-reporter@v1
         with:
           name: Backend Unit Tests report
           path: bugtracker-backend/test-results.xml
-          reporter: jest-junit 
+          reporter: java-junit
 
-  
-  unit-tests-frontend:
-    needs: unit-tests-backend
+  unit-tests-frontend: # Frontend unit test job.
     runs-on: ubuntu-latest
+
     steps:
-        - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-        - name: Setup Node.js 
-          uses: actions/setup-node@v4
-          with:
-            node-version: "24"
-            cache: "npm"
-            cache-dependency-path: bugtracker-frontend/package-lock.json
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20" # Node 20 is a safer default for most frontend projects.
+          cache: "npm"
+          cache-dependency-path: bugtracker-frontend/package-lock.json
 
+      - name: Execute Frontend Unit Tests
+        working-directory: ./bugtracker-frontend
+        run: |
+          npm ci
+          npm test | tee full_output.txt
 
-        - name: Execute Frontend Unit Tests
-          working-directory: ./bugtracker-frontend
-          run: |
-            npm ci 
-            npm test | tee full_output.txt
+          echo "## Frontend Test Output" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat full_output.txt >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
 
-            echo "## Frontend Test Coverage Report" >> $GITHUB_STEP_SUMMARY
-            echo "'''" >> $GITHUB_STEP_SUMMARY
-            cat full_output.txt >> $GITHUB_STEP_SUMMARY
-            echo "'''" >> $GITHUB_STEP_SUMMARY
+  create-coverage-comment: # Add backend coverage as a PR comment.
+    if: github.event_name == 'pull_request'
+    needs: [unit-tests-backend]
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
 
-        - name: Publish Frontend Test Results
-          uses: dorny/test-reporter@v1
-          if: always()
-          with:
-            name: Frontend Unit Tests reporter
-            path: bugtracker-frontend/test-results.xml
-            reporter: jest-junit
+    steps:
+      - name: Create backend coverage comment
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## Backend Test Coverage Report
+            ```
+            ${{ needs.unit-tests-backend.outputs.coverage }}
+            ```
