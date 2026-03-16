@@ -1,27 +1,25 @@
-name: CI    # this is the name of workflow
+name: CI                          # Gives this workflow a name. You will see "CI" in the GitHub Actions tab.
 
-on:         # this is when to trigger the workflow, one is if code is pushed to the main branch
-  push:
-    branches:
-      - main
-    workflow_dispatch:   #this is via github UI
+on:                                     # Defines when this workflow should start.
+  push:                                             # Run automatically whenever code is pushed.
+    branches:                                                   # Limit the push trigger to specific branches.
+      - main                                      # Only run automatically when the push goes to the main branch.
+  workflow_dispatch:                                        # Also allow manual triggering from the GitHub Actions UI.
 
-jobs:      #what are the jobs created to run in CI
-  unit-tests-backend:
-    runs-on: ubuntu-latest
-    steps:  
-      - uses: actions/checkout@v4   #this was not necessary in jenkins but need to chatgpt what this is
+jobs:                                                            # A workflow contains one or more jobs.
+  unit-tests-backend:                                           # This is the job ID. It can be any readable identifier.
+    runs-on: ubuntu-latest                                     # Use GitHub's latest Ubuntu runner machine.
 
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-            go-version: "1.21"
-            cache-dependency-path: bugtracker-backend/go.sum
+    steps:                                                      # A job runs as a sequence of steps.
+      - uses: actions/checkout@v4                   # Downloads your repository code into the runner so the workflow can access your files.
 
-      - name: Execute Backend Unit tests
-        working-directory: ./bugtracker-backend
-        run: |
-            go test -v ./...
+      - name: Set up Go                                         # A readable label for this step in the Actions log.
+        uses: actions/setup-go@v4                                 # Installs and configures Go on the runner.
+        with:                                                    # Inputs for the setup-go action.
+          go-version: "1.21"                                     # Tells GitHub Actions to use Go version 1.21.
+          cache-dependency-path: bugtracker-backend/go.sum        # Uses go.sum to cache dependencies and speed up future runs.
 
-
-
+      - name: Execute Backend Unit Tests                         # Another readable step name shown in the workflow logs.
+        working-directory: ./bugtracker-backend                  # Move into the backend folder before running the command.
+        run: |                      # Start a shell command block. You can put one or multiple commands here.
+          go test -v ./...          # Run all Go tests in this folder and subfolders with verbose output.
