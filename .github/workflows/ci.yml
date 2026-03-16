@@ -12,8 +12,8 @@ on:                                     # Defines when this workflow should star
 jobs:                                                            # A workflow contains one or more jobs.
   unit-tests-backend:                                           # This is the job ID. It can be any readable identifier.
     runs-on: ubuntu-latest                                     # Use GitHub's latest Ubuntu runner machine.
-    output:
-      coverage: ${{steps.test-backend.outputs.report}}
+    outputs:
+      coverage: ${{ steps.test-backend.outputs.report }}
     steps:                                                      # A job runs as a sequence of steps.
       - uses: actions/checkout@v4                   # Downloads your repository code into the runner so the workflow can access your files.
 
