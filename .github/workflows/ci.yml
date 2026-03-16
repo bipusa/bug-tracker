@@ -9,7 +9,8 @@ on:                                     # Defines when this workflow should star
 jobs:                                                            # A workflow contains one or more jobs.
   unit-tests-backend:                                           # This is the job ID. It can be any readable identifier.
     runs-on: ubuntu-latest                                     # Use GitHub's latest Ubuntu runner machine.
-
+    output:
+      coverage: ${{steps.test-backend.outputs.report}}
     steps:                                                      # A job runs as a sequence of steps.
       - uses: actions/checkout@v4                   # Downloads your repository code into the runner so the workflow can access your files.
 
@@ -22,7 +23,8 @@ jobs:                                                            # A workflow co
       - name: Install go-junit-report
         run: go install github.com/jstemmer/go-junit-report/v2@latest
 
-      - name: Execute Backend Unit Tests                         # Another readable step name shown in the workflow logs.
+      - name: Execute Backend Unit Tests     
+        id: test-backend                    # Another readable step name shown in the workflow logs.
         working-directory: ./bugtracker-backend                  # Move into the backend folder before running the command.
         run: |                      # Start a shell command block. You can put one or multiple commands here.
           
@@ -33,6 +35,12 @@ jobs:                                                            # A workflow co
           echo "'''" >> $GITHUB_STEP_SUMMARY
           cat coverage.txt >> $GITHUB_STEP_SUMMARY
           echo "'''" >> $GITHUB_STEP_SUMMARY
+
+          echo "report>>EOF >> $GITHUB_OUTPUT"
+          cat "coverage.txt >> $GITHUB_OUTPUT"
+          echo "report>>EOF >> $GITHUB_OUTPUT"
+
+
           
           go test -v ./... 2>&1 | go-junit-report > test-results.xml         # Run all Go tests in this folder and subfolders with verbose output.
       
@@ -77,3 +85,21 @@ jobs:                                                            # A workflow co
             name: Frontend Unit Tests reporter
             path: bugtracker-frontend/test-results.xml
             reporter: jest-junit
+
+  create-coverage-comment:
+    if: github.event_name == 'pull+request'
+    needs: [unit-tests-backend]
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Create backend coverage comment
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## Backend Test Coverage Report
+            '''
+            ${{ needs.unit-test-backend.outputs.coverage }}
+            ''''
+
