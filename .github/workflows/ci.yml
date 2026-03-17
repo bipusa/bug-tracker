@@ -161,7 +161,7 @@ jobs: # A workflow contains one or more jobs.
 
         - name: Upload E2E Test results
           if: always()
-          uses: actions/upload-artifacts@v4
+          uses: actions/upload-artifact@v4
           with:
             name: e2e-test-results
             path: ./tests-e2e/test-results
@@ -169,7 +169,7 @@ jobs: # A workflow contains one or more jobs.
 
         - name: Upload E2E Playwright Test Report
           if: always()
-          uses: actions/upload-artifacts@v4
+          uses: actions/upload-artifact@v4
           with:
             name: e2e-test-playwright-report
             path: ./tests-e2e/playwright-report
