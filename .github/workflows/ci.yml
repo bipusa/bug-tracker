@@ -112,7 +112,7 @@ jobs: # A workflow contains one or more jobs.
             ```
             ${{ needs.unit-tests-frontend.outputs.coverage }}
             ```
-    api-tests:
+  api-tests:
       - needs: [unit-tests-backend, unit-tests-frontend]
         runs-on: ubuntu-latest
 
@@ -124,4 +124,3 @@ jobs: # A workflow contains one or more jobs.
             runs: |
               docker compose up --build -default
               npx wait-port http://localhost:8080/api/health -t 30000
-              
