@@ -130,3 +130,19 @@ jobs: # A workflow contains one or more jobs.
           run: |
             npm ci
             npx playwright test 
+
+        - name: Upload API Test results
+          if: always()
+          uses: actions/upload-artifact@v4
+          with: 
+            name: api-test-results
+            path: ./tests-api/test-results/
+            retention-days: 30
+
+        - name: Upload API Playwright Test Report
+          if: always()
+          uses: actions/upload-artifact@v4
+          with:
+            name: api-test-playwright-report
+            path: ./tests-api/playwright-report
+            retention-days: 30
